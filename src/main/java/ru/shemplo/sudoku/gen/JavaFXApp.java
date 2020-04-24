@@ -2,6 +2,7 @@ package ru.shemplo.sudoku.gen;
 
 import static ru.shemplo.sudoku.gen.RunSudokuGenerator.*;
 
+import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -12,11 +13,14 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javafx.application.Application;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -78,7 +82,8 @@ public class JavaFXApp extends Application {
     
     private void generate (Map <Integer, List <Image>> digit2image) {
         final var random = getRandom ();
-        final var matrix = generateMatrix (random);
+        final var solutionNmatrix = generateMatrix (random);
+        final var matrix = solutionNmatrix.S;
         
         final var ctx = canvas.getGraphicsContext2D ();
         final var square = RESOLUTION / 9;
@@ -99,6 +104,34 @@ public class JavaFXApp extends Application {
                 }
             }
         }
+        
+        ctx.setStroke (Color.BLACK);
+        
+        ctx.strokeLine (0, 0, RESOLUTION, 0);
+        ctx.strokeLine (0, 0, 0, RESOLUTION);
+        ctx.strokeLine (RESOLUTION, 0, RESOLUTION, RESOLUTION);
+        ctx.strokeLine (RESOLUTION, RESOLUTION, 0, RESOLUTION);
+        
+        ctx.strokeLine (RESOLUTION / 3, 0, RESOLUTION / 3, RESOLUTION);
+        ctx.strokeLine (RESOLUTION * 2 / 3, 0, RESOLUTION * 2 / 3, RESOLUTION);
+        
+        ctx.strokeLine (RESOLUTION, RESOLUTION / 3, 0, RESOLUTION / 3);
+        ctx.strokeLine (RESOLUTION, RESOLUTION * 2 / 3, 0, RESOLUTION * 2 / 3);
+        
+        final var image = new WritableImage ((int) RESOLUTION, (int) RESOLUTION);
+        canvas.snapshot (new SnapshotParameters (), image);
+        
+        final var fullSudoku = SwingFXUtils.fromFXImage (image, null);
+        final var blocks = getSequence (0, 9).stream ()
+            . <RenderedImage> map (i -> {
+                final var size = (int) square * 3;
+                final int r = i / 3, c = i % 3;
+                
+                return fullSudoku.getSubimage (c * size, r * size, size, size);
+            })
+            . collect (Collectors.toList ());
+
+        saveSudoku (getSeed (), matrix, solutionNmatrix.F, fullSudoku, blocks);
     }
     
 }

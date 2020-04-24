@@ -28,7 +28,7 @@ public class RunDigitsGenerator {
     );
     
     public static final List <Double> FONT_SIZES = List.of (
-        10.0, 20.0
+        15.0, 17.5, 20.0
     );
     
     public static final List <FontWeight> FONT_WEIGHTS = List.of (

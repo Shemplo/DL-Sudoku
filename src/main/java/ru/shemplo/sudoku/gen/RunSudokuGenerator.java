@@ -1,7 +1,11 @@
 package ru.shemplo.sudoku.gen;
 
+import java.awt.image.RenderedImage;
 import java.io.File;
-import java.io.FileFilter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -10,15 +14,20 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import javax.imageio.ImageIO;
+
 import javafx.application.Application;
 import lombok.Getter;
+import ru.shemplo.snowball.stuctures.Pair;
 
 @Getter
 public class RunSudokuGenerator {
     
+    public static final File SUDOKUS_DIR = Paths.get ("sudokus").toFile ();
     public static final double RESOLUTION = 9.0 * 64.0;
     public static final int SIZE = 9;
     
+    @Getter
     private static long seed;
     
     @Getter
@@ -28,7 +37,7 @@ public class RunSudokuGenerator {
         seed = System.currentTimeMillis ();
         if (args.length > 0) {
             System.out.println ("Seed is defined: " + args [0]);
-            seed = args [0].hashCode ();
+            //seed = args [0].hashCode ();
         }
         
         System.out.println ("Seed value: " + seed);
@@ -37,7 +46,7 @@ public class RunSudokuGenerator {
         Application.launch (JavaFXApp.class);
     }
     
-    public static int [][] generateMatrix (Random random) {
+    public static Pair <int [][], int [][]> generateMatrix (Random random) {
         final var cpermutation = getPermutation (3, List.of (0, 3, 6), random); // columns permutation
         final var rpermutation = getPermutation (3, List.of (0, 3, 6), random); // rows permutation
         
@@ -47,7 +56,7 @@ public class RunSudokuGenerator {
         final var matrix = permuteMatrix (rpermutation, cpermutation, rbpermutation, cbpermutation);
         final var relaxedMatrix = relaxMatrix (matrix, 30, random);
         
-        return relaxedMatrix;
+        return Pair.mp (matrix, relaxedMatrix);
     }
     
     public static List <Integer> getSequence (int first, int length) {
@@ -132,6 +141,41 @@ public class RunSudokuGenerator {
                      return Arrays.asList (file.listFiles (f -> f.getName ().endsWith (".png")));
                  }
              ));
+    }
+    
+    public static void saveSudoku (long seed, int [][] matrix, int [][] solution, RenderedImage full, List <RenderedImage> blocks) {
+        final var dir = new File (SUDOKUS_DIR, String.valueOf (seed));
+        dir.mkdirs ();
+        
+        final var solutionFile = new File (dir, "solution.txt").toPath ();
+        final var matrixFile = new File (dir, "matrix.txt").toPath ();
+        final var fullImgFile = new File (dir, "full.png");
+        
+        try (
+            final var mBW = Files.newBufferedWriter (matrixFile);
+            final var mPW = new PrintWriter (mBW);
+                
+            final var sBW = Files.newBufferedWriter (solutionFile);
+            final var sPW = new PrintWriter (sBW);
+        ) {
+            for (int i = 0; i < matrix.length; i++) {
+                for (int j = 0; j < matrix [i].length; j++) {
+                    sPW.print (solution [i][j]); sPW.print (" ");
+                    mPW.print (matrix [i][j]); mPW.print (" ");
+                }
+                
+                sPW.println (); mPW.println ();
+            }
+            
+            ImageIO.write (full, "png", fullImgFile);
+            
+            for (int i = 0; i < blocks.size (); i++) {
+                final var file = new File (dir, "block-" + i + ".png");
+                ImageIO.write (blocks.get (i), "png", file);
+            }
+        } catch (IOException ioe) {
+            ioe.printStackTrace ();
+        }
     }
     
 }

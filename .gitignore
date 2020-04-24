@@ -2,6 +2,7 @@
 /target/
 /bin/
 
+/sudokus/
 /digits/
 
 .project

@@ -60,7 +60,7 @@ public class JavaFXApp extends Application {
         final var variations = FONT_FAMILIES.size () 
                              * FONT_SIZES.size () 
                              * FONT_WEIGHTS.size () 
-                             * 10.0;
+                             * 9.0; // 9 digits
         final var generated = new AtomicInteger ();
         
         new Thread (() -> {
