@@ -10,15 +10,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.SnapshotParameters;
 import javafx.scene.canvas.Canvas;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.image.Image;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.BorderPane;
@@ -29,6 +32,7 @@ import ru.shemplo.digits.gen.RunDigitsGenerator;
 
 public class JavaFXApp extends Application {
     
+    private ProgressBar progressBar;
     private VBox canvasBox;
     private Canvas canvas;
     
@@ -42,7 +46,22 @@ public class JavaFXApp extends Application {
         
         final var dir = RunDigitsGenerator.DIGITS_DIR;
         final var digit2files = getDigit2ImageFiles (dir);
-        generate (loadImages (digit2files));
+        
+        new Thread (() -> {
+            final var matrices = getMatrices (SUDOKUS_DIR);
+            final var digits = loadImages (digit2files);
+            final var counter = new AtomicInteger ();
+            
+            for (var matrixNsolutionNfile : matrices) {
+                Platform.runLater (() -> {                
+                    generate (matrixNsolutionNfile.F, matrixNsolutionNfile.S, matrixNsolutionNfile.T, digits);
+                    progressBar.setProgress (counter.incrementAndGet () * 1.0 / matrices.size ());
+                });
+                
+                try   { Thread.sleep (500); } 
+                catch (InterruptedException e) {}
+            }
+        }).start ();
     }
     
     private Scene initView () {
@@ -57,6 +76,11 @@ public class JavaFXApp extends Application {
         
         canvas = new Canvas (RESOLUTION, RESOLUTION);
         canvasBox.getChildren ().add (canvas);
+        
+        progressBar = new ProgressBar (0.0);
+        progressBar.prefWidthProperty ().bind (canvasBox.widthProperty ());
+        BorderPane.setMargin (progressBar, new Insets (8, 0, 0, 0));
+        pane.setBottom (progressBar);
         
         return new Scene (pane);
     }
@@ -80,13 +104,14 @@ public class JavaFXApp extends Application {
         return map;
     }
     
-    private void generate (Map <Integer, List <Image>> digit2image) {
+    private void generate (int [][] matrix, int [][] solution, String filename, Map <Integer, List <Image>> digit2image) {
         final var random = getRandom ();
-        final var solutionNmatrix = generateMatrix (random);
-        final var matrix = solutionNmatrix.S;
         
         final var ctx = canvas.getGraphicsContext2D ();
         final var square = RESOLUTION / 9;
+        
+        ctx.setFill (Color.WHITE);
+        ctx.fillRect (0, 0, RESOLUTION, RESOLUTION);
         
         for (int r = 0; r < matrix.length; r++) {
             for (int c = 0; c < matrix [r].length; c++) {
@@ -131,7 +156,7 @@ public class JavaFXApp extends Application {
             })
             . collect (Collectors.toList ());
 
-        saveSudoku (getSeed (), matrix, solutionNmatrix.F, fullSudoku, blocks);
+        saveSudoku (filename, matrix, solution, fullSudoku, blocks);
     }
     
 }
