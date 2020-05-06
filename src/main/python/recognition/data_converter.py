@@ -3,8 +3,10 @@
 import tensorflow as tf
 import re
 
+import main
+
 def img2array (path):
-    img = tf.keras.preprocessing.image.load_img (path, target_size = [192, 192])
+    img = tf.keras.preprocessing.image.load_img (path, target_size = [main.IMAGE_SIZE, main.IMAGE_SIZE])
     x = tf.keras.preprocessing.image.img_to_array (img)
     return tf.keras.applications.mobilenet.preprocess_input (x [tf.newaxis, ...])
 

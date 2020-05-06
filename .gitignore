@@ -2,6 +2,7 @@
 /target/
 /bin/
 
+**/__pycache__/
 /sudokus/
 /digits/
 
