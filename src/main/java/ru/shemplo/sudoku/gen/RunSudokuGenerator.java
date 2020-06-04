@@ -24,7 +24,7 @@ import ru.shemplo.snowball.stuctures.Trio;
 public class RunSudokuGenerator {
     
     public static final File SUDOKUS_DIR = Paths.get ("sudokus").toFile ();
-    public static final double RESOLUTION = 9.0 * 64.0;
+    public static final double RESOLUTION = 4.0 * 64.0;
     public static final int SIZE = 9;
     
     @Getter

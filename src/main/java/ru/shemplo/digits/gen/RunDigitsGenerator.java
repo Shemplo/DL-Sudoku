@@ -23,19 +23,22 @@ public class RunDigitsGenerator {
     public static final double RESOLUTION = 256.0;
     
     public static final List <String> FONT_FAMILIES = List.of (
-        "Arial", "Calibri", "Bell MT", "Bodoni MT", "CASTELLAR",
-        "Century", "Century Gothic"
+        "Arial"//, "Calibri", "Bell MT", "Bodoni MT", "CASTELLAR", "Century", "Century Gothic"
     );
     
     public static final List <Double> FONT_SIZES = List.of (
-        15.0, 17.5, 20.0
+        15.0//, 17.5, 20.0
     );
     
     public static final List <FontWeight> FONT_WEIGHTS = List.of (
-        NORMAL, BOLD, LIGHT, MEDIUM
+        NORMAL//, BOLD, LIGHT, MEDIUM
     );
     
     public static void main (String ... args) {
+        if (!DIGITS_DIR.exists ()) {
+            DIGITS_DIR.mkdirs ();
+        }
+        
         Application.launch (JavaFXApp.class, args);
     }
     
@@ -45,6 +48,8 @@ public class RunDigitsGenerator {
         
         final RenderedImage renderedImage = SwingFXUtils.fromFXImage (image, null);
         final var dir  = new File (DIGITS_DIR, String.valueOf (digit));
+        if (!dir.exists ()) { dir.mkdir (); }
+        
         final var file = new File (dir, order + ".png");
         if (!file.exists ()) { file.createNewFile (); }
         

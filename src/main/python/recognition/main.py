@@ -23,8 +23,9 @@ def runNN (data):
     # Validation set
     NUM_TEST_IMAGES = 100
     print("Creating {} random test images ... ".format(NUM_TEST_IMAGES), end="", flush=True)
-    test_images, test_labels = nt.getRandomBatch (data, NUM_TEST_IMAGES)
+    test_images, test_labels, data = nt.getRandomBatch (data, NUM_TEST_IMAGES, True)
     print("done")
+    print ("Rest data size: " + str (len (data)))
 
     # Inputs
     with tf.name_scope("input"):
@@ -43,13 +44,10 @@ def runNN (data):
         b_fc1 = bias_variable([NUM_FULLY_CONNECTED_1])
 
         image_flat = tf.reshape(x_image, [-1, IMAGE_SIZE * IMAGE_SIZE])
-        print (image_flat)
         h_fc1 = tf.nn.relu(tf.matmul(image_flat, W_fc1) + b_fc1)
 
         # Dropout
         h_fc1_drop = tf.nn.dropout(h_fc1, keep_prob)
-        print ("SEEEEEEEEEEEEEEEEEEE")
-        print (h_fc1_drop)
 
     # Fully connected layer two
     NUM_FULLY_CONNECTED_2 = 64
@@ -62,8 +60,6 @@ def runNN (data):
 
         # Dropout
         h_fc2_drop = tf.nn.dropout(h_fc2, keep_prob)
-        print ("SEEEEEEEEEEEEEEEEEEE")
-        print (h_fc2_drop)
 
     # Readout
     with tf.name_scope("readout"):
@@ -71,8 +67,6 @@ def runNN (data):
         b_fcR = bias_variable([NUM_OUTPUTS])
 
         y_readout = tf.matmul(h_fc2_drop, W_fcR) + b_fcR
-        print ("SEEEEEEEEEEEEEEEEEEE")
-        print (y_readout)
 
     # Loss function
     with tf.name_scope("cross_entropy"):
@@ -111,8 +105,8 @@ def runNN (data):
         #     print("failed")
         #     pass
 
-        BATCH_SIZE = 100#len(data) - NUM_TEST_IMAGES
-        MAX_STEPS = 100000
+        BATCH_SIZE = 10#len(data) - NUM_TEST_IMAGES
+        MAX_STEPS = 10000
 
         KEEP_PROBABILITY = 1.0
 

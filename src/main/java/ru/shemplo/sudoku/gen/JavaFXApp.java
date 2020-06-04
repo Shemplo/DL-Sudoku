@@ -58,7 +58,7 @@ public class JavaFXApp extends Application {
                     progressBar.setProgress (counter.incrementAndGet () * 1.0 / matrices.size ());
                 });
                 
-                try   { Thread.sleep (500); } 
+                try   { Thread.sleep (300); } 
                 catch (InterruptedException e) {}
             }
         }).start ();
@@ -124,8 +124,8 @@ public class JavaFXApp extends Application {
                 }
                 
                 if (((r + c) & 1) == 0) {
-                    ctx.setFill (Color.rgb (240, 240, 250, 0.5));
-                    ctx.fillRect (c * square, r * square, square, square);
+                    //ctx.setFill (Color.rgb (240, 240, 250, 0.5));
+                    //ctx.fillRect (c * square, r * square, square, square);
                 }
             }
         }

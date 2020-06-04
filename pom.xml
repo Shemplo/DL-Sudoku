@@ -18,6 +18,13 @@
     </plugins>
   </build>
   
+  <repositories>
+    <repository>
+        <id>neuroph.sourceforge.net</id>
+        <url>http://neuroph.sourceforge.net/maven2/</url>
+  	</repository>        
+  </repositories>
+  
   <dependencies>
   	<dependency>
       <groupId>org.projectlombok</groupId>
@@ -54,6 +61,12 @@
       <artifactId>javafx-swing</artifactId>
       <version>14.0.1</version>
       <classifier>win</classifier>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.neuroph</groupId>
+      <artifactId>neuroph-core</artifactId>
+      <version>2.96</version>
     </dependency>
   </dependencies>
 </project>
