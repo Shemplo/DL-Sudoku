@@ -11,45 +11,50 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.neuroph.core.Layer;
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
 import org.neuroph.core.data.DataSetRow;
 import org.neuroph.core.events.LearningEvent.Type;
-import org.neuroph.nnet.Perceptron;
-import org.neuroph.nnet.learning.BackPropagation;
-import org.neuroph.util.ConnectionFactory;
+import org.neuroph.core.transfer.Sigmoid;
+import org.neuroph.nnet.ConvolutionalNetwork;
+import org.neuroph.nnet.comp.Dimension2D;
+import org.neuroph.nnet.learning.ConvolutionalBackpropagation;
 
 import javafx.scene.image.Image;
 
 public class RunSudokuRecognition {
     
-    private static final int INPUT = 84, OUTPUT = 3;
+    private static final int INPUT = 63, OUTPUT = 3;
     
-    @SuppressWarnings ("unchecked")
     public static void main (String ... args) throws IOException {
         Locale.setDefault (Locale.ENGLISH);
         
         final var nn = logAction ("Creating network", () -> {
-            final var network = new Perceptron (INPUT * INPUT, OUTPUT * OUTPUT);
-            network.addListener (nne -> {
-                nne.getEventType ();
-            });
+            final var network = new ConvolutionalNetwork.Builder ()
+                . withInputLayer (INPUT, INPUT, 1)
+                . withConvolutionLayer (new Dimension2D (3, 3), 1, Sigmoid.class)
+                //. withPoolingLayer (INPUT + 2, INPUT + 2)
+                //. withConvolutionLayer (new Dimension2D (3, 3), 1, Sigmoid.class)
+                . withFullConnectedLayer (12 * 12)
+                . withFullConnectedLayer (9)
+                . build ();
             
-            network.addLayer (new Layer (INPUT * INPUT));
-            //network.addLayer (new Layer (96 * 96));
-            network.addLayer (new Layer (84 * 84));
-            network.addLayer (new Layer (72 * 72));
-            network.addLayer (new Layer (48 * 48));
-            network.addLayer (new Layer (24 * 24));
-            network.addLayer (new Layer (12 * 12));
-            network.addLayer (new Layer (6 * 6));
-            network.addLayer (new Layer (OUTPUT * OUTPUT));
-            
-            for (int i = 1; i < network.getLayers ().size (); i++) {
-                ConnectionFactory.fullConnect (network.getLayerAt (i - 1), network.getLayerAt (i));
-            }
-            
+            /*
+            final var network = new MultiLayerPerceptron (
+                TransferFunctionType.TANH,
+                INPUT * INPUT,
+                //96 * 96,
+                //108 * 108,
+                //96 * 96,
+                //84 * 84,
+                //72 * 72,
+                //48 * 48,
+                24 * 24,
+                //12 * 12,
+                //6 * 6,
+                OUTPUT * OUTPUT
+            );
+            */
             return network;
         });
         
@@ -57,28 +62,33 @@ public class RunSudokuRecognition {
         
         final var dataset = logAction ("Loading dataset", () -> { 
             final var tmp = loadDataset (); 
-            System.out.println ("    Loaded images: " + tmp.getRows ().size ());
+            System.out.println ("    Loaded parts: " + tmp.getRows ().size ());
+            tmp.shuffle ();
             return tmp;
         });
         
         final var tests = logAction ("Creating validation set", () -> {
+            final var tmp = IntStream.range (0, 200).mapToObj (__ -> dataset.remove (0))
+                . collect (Collectors.toList ());
             dataset.shuffle ();
             
-            return IntStream.range (0, 200).mapToObj (__ -> dataset.remove (0))
-                 . collect (Collectors.toList ());
+            return tmp;
         });
         
         final var epochs = new AtomicInteger ();
         final var rule = logAction ("Creating learning rules", () -> {
-            final var tmp = new BackPropagation ();
-            tmp.setMaxIterations (500);
+            final var tmp = new ConvolutionalBackpropagation ();
+            //final var tmp = new BackPropagation ();
+            tmp.setMaxIterations (10);
+            tmp.setLearningRate (0.3);
             tmp.setBatchMode (true);
             tmp.setMaxError (0.01);
             
             tmp.addListener (le -> {
                 if (le.getEventType () == Type.EPOCH_ENDED) {
-                    if (epochs.incrementAndGet () % 5 == 0) {
-                        System.out.printf ("    %3d epochs trained -", epochs.get ());
+                    if (epochs.incrementAndGet () % 1 == 0) {
+                        final var error = tmp.getErrorFunction ().getTotalError ();
+                        System.out.printf ("    %3d epochs over - Error: %.3f;", epochs.get (), error);
                         
                         nn.pauseLearning ();
                         validateNetwork (nn, tests, false);
@@ -86,14 +96,15 @@ public class RunSudokuRecognition {
                     }
                 }
             });
+            
             return tmp;
         });
         
         logAction ("Training network", () -> {
-            dataset.shuffle ();
-            
             nn.learn (dataset, rule);
         });
+        
+        nn.save ("sudoku.nnet");
         
         logAction ("Validating network", () -> validateNetwork (nn, tests, true));
     }
@@ -145,7 +156,7 @@ public class RunSudokuRecognition {
         
         for (int y = 0; y < OUTPUT; y++) {
             for (int x = 0; x < OUTPUT; x++) {
-                block [y * 3 + x] = matrix.get (y + yoffset * 3).get (x + xoffset * 3).doubleValue ();
+                block [y * 3 + x] = (matrix.get (y + yoffset * 3).get (x + xoffset * 3).intValue ()) / 9.0;
             }
         }
         
@@ -158,14 +169,6 @@ public class RunSudokuRecognition {
         for (int i = 0; i < tests.size (); i++) {
             final var test = tests.get (i);
             
-            /*
-            System.out.print ("    Input prefix: ");
-            for (int j = 0; j < 200; j++) {
-                System.out.print (String.format ("%.3f, ", test.getInput () [j]));
-            }
-            System.out.println ("...");
-            */
-            
             nn.setInput (test.getInput ());
             nn.calculate ();
             
@@ -176,7 +179,7 @@ public class RunSudokuRecognition {
             }
             
             for (int j = 0; j < OUTPUT * OUTPUT; j++) {                
-                if (test.getDesiredOutput () [j] == nn.getOutput () [j]) {
+                if (Math.abs (test.getDesiredOutput () [j] / 9.0 - Math.round (nn.getOutput () [j])) < 1e-2) {
                     correct++;
                 }
                 
