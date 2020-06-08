@@ -16,11 +16,11 @@ Deep Convolution Neural Network model for solving sudoku puzzles with various nu
 
 The input for the model is 3d matrices of size *batch* x 9 x 9 containing numbers from 1 to 9 and '0' for empty fields. Model consists of Input Convolution layer with 3x3 kernel with Batch normalization and ReLU, several **Res2Net** layers and Output Convolution as shown in figure.
 
-![Architecture](architecture.png)
+![Architecture](img/architecture.png)
 
 **Res2Net** is a modification of ResNet technique, which combines two convolutions with different kernel sizes (namely, 3x3 and 5x5) and residual connection as shown in figure.
 
-![Res2Net](res2net.png)
+![Res2Net](img/res2net.png)
 
 ### Datasets
 
