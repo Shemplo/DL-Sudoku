@@ -50,16 +50,16 @@ First of all, model was tested against 1 million sudoku dataset. The accuracy is
 
 ![test1](img/acc_test.png)
 
-To boost the accuracy for hard cases, we use iterative approach. Given a prediction for a puzzle, algotrithm fills only one blank with the most certain prediction and repeats prediction for new puzzle. Thus, we achive much higher accuracy and outperformed the solution from https://github.com/Kyubyong/sudoku as can be seen in figure.
+To boost the accuracy for hard cases, we use iterative approach. Given a prediction for a puzzle, algotrithm fills only one blank with the most certain prediction and repeats prediction for new puzzle. Thus, we achive much higher accuracy and outperform the solution from https://github.com/Kyubyong/sudoku as can be seen in figure.
 
 ![test2](img/acc_test2.png)
 
 ### Files
 This repo contains:
-* `test.ipynb` -- Jupyter Notebook with an example of solving sudoku with pretrained model
-* `model.py` -- Source code for network training and solving
-* `utils.py` -- useful utils for data manipulation and vizualization
-* `sudoku_res2net_model.tar` -- pretrained model with hign accuracy
-* `sudoku_test.csv` -- file with 30 real-world sudoku quizes with solutions
-* `Sudoku_train.ipynb` -- Deprecated Jupyter Notebook used for training before
-* `img/` -- folder with images for Readme
+* `test.ipynb` — Jupyter Notebook with an example of solving sudoku with pretrained model
+* `model.py` — source code for network training and solving
+* `utils.py` — useful utils for data manipulation and vizualization
+* `sudoku_res2net_model.tar` — pretrained model with hign accuracy
+* `sudoku_test.csv` — file with 30 real-world sudoku quizes with solutions
+* `Sudoku_train.ipynb` — deprecated Jupyter Notebook used for training before
+* `img/` — folder with images for Readme
