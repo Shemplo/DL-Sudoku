@@ -1,12 +1,12 @@
 package ru.shemplo.sudoku.recog;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -15,74 +15,71 @@ import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
 import org.neuroph.core.data.DataSetRow;
 import org.neuroph.core.events.LearningEvent.Type;
-import org.neuroph.core.transfer.Sigmoid;
-import org.neuroph.nnet.ConvolutionalNetwork;
-import org.neuroph.nnet.comp.Dimension2D;
-import org.neuroph.nnet.learning.ConvolutionalBackpropagation;
-
-import javafx.scene.image.Image;
+import org.neuroph.core.learning.error.MeanAbsoluteError;
+import org.neuroph.nnet.MultiLayerPerceptron;
+import org.neuroph.nnet.learning.BackPropagation;
+import org.neuroph.util.TransferFunctionType;
 
 public class RunSudokuRecognition {
     
-    private static final int INPUT = 63, OUTPUT = 3;
+    private static final Random r = new Random (1L);
+    
+    private static final int INPUT = 9, OUTPUT = 9;
+    private static final int VALIDATION = 10;
+    private static final int EPOCHS = 1000;
     
     public static void main (String ... args) throws IOException {
         Locale.setDefault (Locale.ENGLISH);
         
         final var nn = logAction ("Creating network", () -> {
-            final var network = new ConvolutionalNetwork.Builder ()
-                . withInputLayer (INPUT, INPUT, 1)
-                . withConvolutionLayer (new Dimension2D (3, 3), 1, Sigmoid.class)
-                //. withPoolingLayer (INPUT + 2, INPUT + 2)
-                //. withConvolutionLayer (new Dimension2D (3, 3), 1, Sigmoid.class)
-                . withFullConnectedLayer (12 * 12)
-                . withFullConnectedLayer (9)
-                . build ();
-            
-            /*
             final var network = new MultiLayerPerceptron (
-                TransferFunctionType.TANH,
-                INPUT * INPUT,
+                TransferFunctionType.SIGMOID,
+                INPUT * INPUT * INPUT,
                 //96 * 96,
                 //108 * 108,
                 //96 * 96,
                 //84 * 84,
                 //72 * 72,
                 //48 * 48,
-                24 * 24,
-                //12 * 12,
+                //24 * 24,
+                28 * 28,
                 //6 * 6,
-                OUTPUT * OUTPUT
+                //5 * 5,
+                //5 * 5,
+                OUTPUT * OUTPUT * OUTPUT
             );
-            */
             return network;
         });
         
-        logAction ("Randomizing weights", () -> nn.randomizeWeights ());
+        logAction ("Randomizing weights", () -> nn.randomizeWeights (r));
         
         final var dataset = logAction ("Loading dataset", () -> { 
             final var tmp = loadDataset (); 
             System.out.println ("    Loaded parts: " + tmp.getRows ().size ());
-            tmp.shuffle ();
+            tmp.shuffle (r);
             return tmp;
         });
         
         final var tests = logAction ("Creating validation set", () -> {
-            final var tmp = IntStream.range (0, 200).mapToObj (__ -> dataset.remove (0))
+            final var tmp = IntStream.range (0, VALIDATION).mapToObj (__ -> dataset.remove (0))
                 . collect (Collectors.toList ());
-            dataset.shuffle ();
+            dataset.shuffle (r);
             
             return tmp;
         });
         
         final var epochs = new AtomicInteger ();
         final var rule = logAction ("Creating learning rules", () -> {
-            final var tmp = new ConvolutionalBackpropagation ();
-            //final var tmp = new BackPropagation ();
-            tmp.setMaxIterations (10);
-            tmp.setLearningRate (0.3);
+            //final var tmp = new ConvolutionalBackpropagation ();
+            final var tmp = new BackPropagation ();
+            tmp.setErrorFunction (new MeanAbsoluteError ());
+            //tmp.setErrorFunction (new RecognitionError ());
+            tmp.setMaxIterations (EPOCHS);
+            //tmp.setLearningRate (0.3);
             tmp.setBatchMode (true);
-            tmp.setMaxError (0.01);
+            //tmp.setMaxError (0.01);
+            tmp.setLearningRate (0.05);
+            
             
             tmp.addListener (le -> {
                 if (le.getEventType () == Type.EPOCH_ENDED) {
@@ -91,7 +88,7 @@ public class RunSudokuRecognition {
                         System.out.printf ("    %3d epochs over - Error: %.3f;", epochs.get (), error);
                         
                         nn.pauseLearning ();
-                        validateNetwork (nn, tests, false);
+                        validateNetwork (nn, tests, epochs.get () % 10 == 0);
                         nn.resumeLearning ();
                     }
                 }
@@ -104,13 +101,13 @@ public class RunSudokuRecognition {
             nn.learn (dataset, rule);
         });
         
-        nn.save ("sudoku.nnet");
+        //nn.save ("sudoku.nnet");
         
         logAction ("Validating network", () -> validateNetwork (nn, tests, true));
     }
     
     private static DataSet loadDataset () throws IOException {
-        final var dataset = new DataSet (INPUT * INPUT, OUTPUT * OUTPUT);
+        final var dataset = new DataSet (INPUT * INPUT * INPUT, OUTPUT * OUTPUT * OUTPUT);
         final var rootDir = new File ("sudokus");
         
         for (final var dir : rootDir.listFiles (File::isDirectory)) {
@@ -121,11 +118,30 @@ public class RunSudokuRecognition {
     }
     
     private static void readSudokuFolder (DataSet set, File directory) throws IOException {
+        final var linesS = Files.readAllLines (new File (directory, "solution.txt").toPath ());
         final var lines = Files.readAllLines (new File (directory, "matrix.txt").toPath ());
-        final var <List <Integer>> matrix = lines.stream ().map (line -> {
-            return Arrays.stream (line.split ("\s+")).map (Integer::parseInt).collect (Collectors.toList ());
+        /*
+        final var matrix = lines.stream ().map (line -> {
+            return Arrays.stream (line.split ("\s+")).map (Integer::parseInt).mapToDouble (v -> 1.0 * v).toArray ();
         }).collect (Collectors.toList ());
+        final var matrixS = linesS.stream ().map (line -> {
+            return Arrays.stream (line.split ("\s+")).map (Integer::parseInt).mapToDouble (v -> 1.0 * v).toArray ();
+        }).collect (Collectors.toList ());
+        */
         
+        final var matrix = lines.stream ().flatMap (line -> {
+            return Arrays.stream (line.split ("\s+"));
+        }).map (Integer::parseInt).flatMap (d -> Arrays.stream (digitToarray (d)).boxed ())
+          .mapToDouble (v -> v).toArray ();
+        
+        final var matrixS = linesS.stream ().flatMap (line -> {
+            return Arrays.stream (line.split ("\s+"));
+        }).map (Integer::parseInt).flatMap (d -> Arrays.stream (digitToarray (d)).boxed ())
+          .mapToDouble (v -> v).toArray ();
+        
+        set.add (new DataSetRow (matrix, matrixS));
+        
+        /*
         for (int i = 0; i < 9; i++) {
             try (
                 final var is = new FileInputStream (new File (directory, "block-" + i + ".png"));
@@ -146,6 +162,25 @@ public class RunSudokuRecognition {
                 set.add (new DataSetRow (buffer, getBlockFromMatrix (matrix, i)));
             }
         }
+        */
+    }
+    
+    private static double [] digitToarray (int digit) {
+        final var array = new double [9];
+        if (digit > 0) {            
+            array [digit - 1] = 1.0;
+        }
+        return array;
+    }
+    
+    private static double arrayToDigit (double [] array, int offset) {
+        for (int i = 0; i < 9; i++) {
+            if (Math.round (array [offset * 9 + i]) == 1) {
+                return i + 1;
+            }
+        }
+        
+        return 0.0;
     }
     
     private static double [] getBlockFromMatrix (List <List <Integer>> matrix, int index) {
@@ -156,7 +191,7 @@ public class RunSudokuRecognition {
         
         for (int y = 0; y < OUTPUT; y++) {
             for (int x = 0; x < OUTPUT; x++) {
-                block [y * 3 + x] = (matrix.get (y + yoffset * 3).get (x + xoffset * 3).intValue ()) / 9.0;
+                block [y * 3 + x] = matrix.get (y + yoffset * 3).get (x + xoffset * 3).intValue () / 9.0;
             }
         }
         
@@ -174,14 +209,21 @@ public class RunSudokuRecognition {
             
             if (verbose) {
                 System.out.println ("    Test #" + i);
-                System.out.println ("    Expected: " + Arrays.toString (test.getDesiredOutput ()));                
-                System.out.println ("    Actual:   " + Arrays.toString (nn.getOutput ()));
+                System.out.println ("    Expected: " + Arrays.stream (test.getDesiredOutput ())
+                    .mapToObj (v -> Math.round (v * 1)).collect (Collectors.toList ())
+                );                
+                System.out.println ("    Actual:   " + Arrays.stream (nn.getOutput ())
+                    .mapToObj (v -> Math.round (v * 1)).collect (Collectors.toList ())
+                );
             }
             
-            for (int j = 0; j < OUTPUT * OUTPUT; j++) {                
-                if (Math.abs (test.getDesiredOutput () [j] / 9.0 - Math.round (nn.getOutput () [j])) < 1e-2) {
-                    correct++;
-                }
+            for (int j = 0; j < OUTPUT * OUTPUT; j++) {
+                //final var expected = Math.round (test.getDesiredOutput () [j] * 9);
+                //final var actual = Math.round (nn.getOutput () [j] * 9);
+                final var expected = arrayToDigit (test.getDesiredOutput (), j);
+                final var actual = arrayToDigit (nn.getOutput (), j);
+                
+                if (Math.abs (expected - actual) < 1e-2) { correct++; }
                 
                 total++;
             }
