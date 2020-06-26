@@ -6,7 +6,7 @@
     * **Solution:** train neural network that will find binary classified mask - sudoku area or not sudoku area
     * **Input:** image of 224x224x3px resolution
     * **Output:** image of binary classified mask of 224x224px resolution
-    * **Reached accuracy**: **.*%
+    * **Reached accuracy**: 98.7% on validation set
 2. Split sudoku area on 9 equal squares (correspondingly to 3x3 sub-matrices of puzzle) <sub>_(partly implemented)_</sub>
     * According to binary mask 4 corner points can be found and polygon can be fetched
     * Each side of 4-side poligon is splitted on 3 equal parts (due to assumtion that sudoku has simmetric structure)
@@ -23,12 +23,13 @@
      * **Solution:** train neural network that will solve sudoku and return 2-array of assumed digits
      * **Input:** array (9x9) with digits or 0 if it's a emply cell
      * **Output:** array (9x9) with assumed digits that is a solution of puzzle
-     * **Reached accuracy:** 92+%
+     * **Reached accuracy:** 90.2% on validation set
 
 ### Repository content
 
 * `src/main/java/**/digits/gen` ([link](https://github.com/Shemplo/DL-Sudoku/tree/master/src/main/java/ru/shemplo/digits/gen)) - supplementary part of this project for generation of different variations of digits (font family, font size, font styles)
 * `src/main/java/**/sudoku/gen` ([link](https://github.com/Shemplo/DL-Sudoku/tree/master/src/main/java/ru/shemplo/sudoku/gen)) - supplementary part of this project for generation of different variations of sudoku puzzle images. It takes generater sudoku puzzle matrix (9x9) and variations of digits and then combines them making image
 * `src/main/java/**/sudoku/recog` ([link](https://github.com/Shemplo/DL-Sudoku/tree/master/src/main/java/ru/shemplo/sudoku/recog)) - first attempt to cope with task 3 from pipeline using NN framework [Neuroph](http://neuroph.sourceforge.net/) on Java
-* `src/main/python/recognition` ([link](https://github.com/Shemplo/DL-Sudoku/tree/master/src/main/python/recognition)) - solutions for tasks 1 and 3 from pipeline
-* `src/main/python/solving` ([link](https://github.com/Shemplo/DL-Sudoku/tree/master/src/main/python/solving)) - solutions for task 5 from pipeline
+* `src/main/python/grid_extraction/` ([link](https://github.com/Shemplo/DL-Sudoku/tree/master/src/main/python/grid_extraction)) - solution for task 1 from pipeline
+* `src/main/python/recognition` ([link](https://github.com/Shemplo/DL-Sudoku/tree/master/src/main/python/recognition)) - solution for task 3 from pipeline
+* `src/main/python/solving` ([link](https://github.com/Shemplo/DL-Sudoku/tree/master/src/main/python/solving)) - solution for task 5 from pipeline
