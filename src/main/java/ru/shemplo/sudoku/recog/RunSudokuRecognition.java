@@ -130,12 +130,12 @@ public class RunSudokuRecognition {
         */
         
         final var matrix = lines.stream ().flatMap (line -> {
-            return Arrays.stream (line.split ("\s+"));
+            return Arrays.stream (line.split ("\\s+"));
         }).map (Integer::parseInt).flatMap (d -> Arrays.stream (digitToarray (d)).boxed ())
           .mapToDouble (v -> v).toArray ();
         
         final var matrixS = linesS.stream ().flatMap (line -> {
-            return Arrays.stream (line.split ("\s+"));
+            return Arrays.stream (line.split ("\\s+"));
         }).map (Integer::parseInt).flatMap (d -> Arrays.stream (digitToarray (d)).boxed ())
           .mapToDouble (v -> v).toArray ();
         

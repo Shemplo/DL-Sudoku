@@ -64,8 +64,8 @@ public class RunSudokuGenerator {
                      int [][] matrix = new int [SIZE][SIZE], 
                             solution = new int [SIZE][SIZE];
                      for (int r = 0; r < SIZE; r++) {
-                         String [] matrixLine = lines.get (r + SIZE + 1).split ("\s+");
-                         String [] solutionLine = lines.get (r).split ("\s+");
+                         String [] matrixLine = lines.get (r + SIZE + 1).split ("\\s+");
+                         String [] solutionLine = lines.get (r).split ("\\s+");
                          
                          for (int c = 0; c < SIZE; c++) {
                              matrix [r][c] = matrixLine [c].equals ("_") ? 0 : Integer.parseInt (matrixLine [c]);
